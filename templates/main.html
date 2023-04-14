@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Movie Recommendation System</title>
+	<link rel="stylesheet" type="text/css" href="../static/style.css">
+</head>
+<body>
+	<header>
+		<div class="container">
+			<h1>Movie Recommendation System</h1>
+		</div>
+	</header>
+
+	<div class="container">
+		<form method="POST" action="{{ url_for('my_route') }}">
+			<label for="movie">Enter movie name:</label>
+			<input type="text" id="movie" name="movie" placeholder="Movie name..." value="{{ request.form['movie'] }}">
+			<button type="submit" class="btn">Get recommendations</button>
+		</form>
+
+		<div id="results">
+			<ul>
+				{% for item in my_list %}
+					<li>{{ item }}</li>
+				{% endfor %}
+			</ul>
+			<!-- Recommendations will be displayed here -->
+		</div>
+	</div>
+
+</body>
+</html>
