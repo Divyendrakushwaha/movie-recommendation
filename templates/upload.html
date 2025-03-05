@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CSV | Divyendra's Project</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Upload a CSV File</h1>
+            <p>Choose a CSV file to upload and get recommendations based on your data.</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>📂 Upload Your CSV</h2>
+            <form action="{{ url_for('custom_recommend') }}" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit" class="btn">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('index') }}" class="btn home-btn">🏠 Home</a>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Divyendra's Recommendation System</p>
+    </footer>
+</body>
+</html>

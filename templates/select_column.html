@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Select Columns & Query</title>
+    <link rel="stylesheet" type="text/css" href="../static/style.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const columnItems = document.querySelectorAll(".column-item");
+            const selectedList = document.getElementById("selectedList");
+            const selectedColumnsContainer = document.getElementById("selectedColumnsContainer");
+
+            let selectedColumns = new Set();  // To store selected columns
+
+            columnItems.forEach(item => {
+                item.addEventListener("click", function () {
+                    const column = this.dataset.value;
+
+                    if (selectedColumns.has(column)) {
+                        selectedColumns.delete(column);  // Remove if already selected
+                        this.classList.remove("selected");
+                    } else {
+                        selectedColumns.add(column);  // Add to selection
+                        this.classList.add("selected");
+                    }
+
+                    // Update hidden input fields dynamically
+                    selectedColumnsContainer.innerHTML = "";
+                    selectedColumns.forEach(col => {
+                        let input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = "columns";  // Ensures Flask receives a list
+                        input.value = col;
+                        selectedColumnsContainer.appendChild(input);
+                    });
+
+                    // Update UI list
+                    selectedList.innerHTML = "";
+                    selectedColumns.forEach(col => {
+                        let li = document.createElement("li");
+                        li.textContent = col;
+                        selectedList.appendChild(li);
+                    });
+                });
+            });
+        });
+    </script>
+    <style>
+        .columns-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .column-item {
+            padding: 10px;
+            border: 1px solid #007BFF;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .column-item.selected {
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Custom CSV Recommendation</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <form method="POST" action="{{ url_for('process_csv') }}">
+            <input type="hidden" name="filename" value="{{ filename }}">
+
+            <label>Select columns:</label>
+            <div class="columns-container">
+                {% for col in columns %}
+                <div class="column-item" data-value="{{ col }}">{{ col }}</div>
+                {% endfor %}
+            </div>
+
+            <div id="selectedColumnsContainer"></div> <!-- Hidden inputs for columns -->
+
+            <h3>Selected Columns:</h3>
+            <ul id="selectedList"></ul>
+
+            <label for="query">Enter your query:</label>
+            <input type="text" id="query" name="query" required>
+        
+            <button type="submit" class="btn">Get Recommendations</button>
+        </form>
+    </div>
+    
+    <footer>
+        <p>&copy; Recommendation System</p>
+    </footer>
+</body>
+</html>

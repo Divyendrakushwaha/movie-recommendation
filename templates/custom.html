@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom CSV-Based Recommendation</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Custom CSV-Based Recommendation</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <form method="POST" action="{{ url_for('custom_recommend') }}" enctype="multipart/form-data">
+            <label for="file">Upload CSV File:</label>
+            <input type="file" name="file" required>
+            <button type="submit" class="btn">Upload</button>
+        </form>
+
+        {% if columns %}
+        <form method="POST" action="{{ url_for('custom_recommend') }}">
+            <label>Select column for similarity:</label>
+            <select name="column">
+                {% for col in columns %}
+                    <option value="{{ col }}">{{ col }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn">Generate Recommendations</button>
+        </form>
+        {% endif %}
+
+        {% if recommendations %}
+        <div id="results">
+            <h2>Top Recommendations:</h2>
+            <ul>
+                {% for item in recommendations %}
+                    <li><h3>{{ item }}</h3></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Custom Recommendation System</p>
+    </footer>
+</body>
+</html>

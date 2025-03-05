@@ -1,81 +1,130 @@
-from flask import Flask
-from flask import request, render_template
-
-import numpy as np
+import os
 import pandas as pd
 import difflib
+from flask import Flask, request, render_template, redirect, url_for, flash
+from werkzeug.utils import secure_filename
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-# Flask constructor takes the name of
-# current module (__name__) as argument.
+
 app = Flask(__name__)
- 
-# The route() function of the Flask class is a decorator,
-# which tells the application which URL should call
-# the associated function.
-@app.route('/movie',methods=['GET', 'POST'])
-def my_route():
 
-    movie_name = request.form.get('movie')
-    print(movie_name)
-    my_list = []
-    if movie_name != None:
+# Set upload folder
+UPLOAD_FOLDER = '/home/divyendrak/mysite/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = "supersecretkey"
+
+# Ensure upload folder exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Landing Page
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Movie Recommendation Route
+@app.route('/movie', methods=['GET', 'POST'])
+def movie_recommend():
+    if request.method == 'POST':
+        movie_name = request.form.get('movie')
+        if not movie_name:
+            flash("Please enter a movie name!", "danger")
+            return redirect(url_for('movie_recommend'))
+
         movies_data = pd.read_csv('movies.csv')
-        print(movies_data.head())
+        selected_features = ['genres', 'keywords', 'tagline', 'cast', 'director']
+        movies_data.fillna('', inplace=True)
 
-        selected_features = ['genres','keywords','tagline','cast','director']
-        print(selected_features)
-
-        for feature in selected_features:
-            movies_data[feature] = movies_data[feature].fillna('')
-
-        combined_features = movies_data['genres']+' '+movies_data['keywords']+' '+movies_data['tagline']+' '+movies_data['cast']+' '+movies_data['director']
-
+        combined_features = movies_data[selected_features].agg(' '.join, axis=1)
         vectorizer = TfidfVectorizer()
         feature_vectors = vectorizer.fit_transform(combined_features)
 
         similarity = cosine_similarity(feature_vectors)
-        print(similarity)
-
-        print(similarity.shape)
-
-        # tell your movie name
-        # movie_name = "now you see me"
 
         list_of_all_titles = movies_data['title'].tolist()
-        find_close_match = difflib.get_close_matches(movie_name, list_of_all_titles)
-        print(find_close_match)
+        close_match = difflib.get_close_matches(movie_name, list_of_all_titles, n=1)
 
-        close_match = find_close_match[0]
-        print(close_match)
+        if not close_match:
+            flash("Movie not found!", "danger")
+            return redirect(url_for('movie_recommend'))
 
-        index_of_the_movie = movies_data[movies_data.title == close_match]['index'].values[0]
-        print(index_of_the_movie)
+        index_of_movie = movies_data[movies_data.title == close_match[0]]['index'].values[0]
+        similarity_scores = list(enumerate(similarity[index_of_movie]))
+        sorted_similar_movies = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
 
-        similarity_score = list(enumerate(similarity[index_of_the_movie]))
-        print(similarity_score)
+        recommendations = [movies_data.iloc[movie[0]]['title'] for movie in sorted_similar_movies[1:11]]
+        print(recommendations)
+        return render_template('main.html', my_list=recommendations)
 
-        sorted_similar_movies = sorted(similarity_score, key = lambda x:x[1], reverse = True) 
-        # print(sorted_similar_movies)
+    return render_template('main.html', my_list=[])
 
-        print('Movies suggested for you : \n')
+# Custom CSV Recommendation Route
+@app.route('/upload', methods=['GET', 'POST'])
+def custom_recommend():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash("No file part!", "danger")
+            return redirect(request.url)
 
-        i = 1
-        
-        for movie in sorted_similar_movies:
-            index = movie[0]
-            title_from_index = movies_data[movies_data.index==index]['title'].values[0]
-            if (i<30):
-                print(i, '.',title_from_index)
-                i+=1
-                my_list.append(title_from_index)
-        return render_template('main.html', my_list=my_list)
-    else:
-        return render_template('main.html')
- 
-# main driver function
+        file = request.files['file']
+        if file.filename == '':
+            flash("No selected file!", "danger")
+            return redirect(request.url)
+
+        if file and file.filename.endswith('.csv'):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            df = pd.read_csv(file_path)
+            columns = df.columns.tolist()
+
+            return render_template('select_column.html', filename=filename, columns=columns)
+
+    return render_template('upload.html')
+
+# Process CSV Recommendation
+@app.route('/process', methods=['POST'])
+def process_csv():
+    filename = request.form.get('filename')
+    user_query = request.form.get('query')
+    selected_columns = request.form.getlist('columns')
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.exists(file_path):
+        flash("File not found!", "danger")
+        return redirect(url_for('custom_recommend'))
+
+    df = pd.read_csv(file_path)
+    df = df.astype(str)
+    df.fillna('', inplace=True)
+
+    if not selected_columns:
+        flash("Please select at least one column!", "danger")
+        return redirect(url_for('custom_recommend'))
+    print(df.columns)
+    df['combined_features'] = df[selected_columns].agg(' '.join, axis=1)
+    vectorizer = TfidfVectorizer()
+    feature_vectors = vectorizer.fit_transform(df['combined_features'].astype(str))
+
+    query_vector = vectorizer.transform([user_query])
+    similarity_scores = cosine_similarity(query_vector, feature_vectors).flatten()
+    sorted_indices = similarity_scores.argsort()[::-1][:10]
+
+    max_score = similarity_scores.max() if similarity_scores.max() > 0 else 1
+    normalized_scores = (similarity_scores[sorted_indices] / max_score) * 100
+    normalized_scores = [round(score, 1) for score in normalized_scores]
+
+    print(normalized_scores)
+    df = df.drop(columns=['combined_features'])
+    
+    recommendations = df.iloc[sorted_indices].copy()  # Ensure a copy to avoid SettingWithCopyWarning
+    recommendations["score"] = normalized_scores  # Assign scores directly
+
+    # Filter where score > 0
+    recommendations = recommendations[recommendations["score"] > 0].to_dict(orient="records")
+    if not recommendations:
+        flash("Please enter a movie name!", "danger")
+    return render_template('recommendation.html', recommendations=recommendations)
+
 if __name__ == '__main__':
- 
-    # run() method of Flask class runs the application
-    # on the local development server.
     app.run()

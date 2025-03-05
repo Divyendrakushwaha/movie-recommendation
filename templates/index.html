@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome | Divyendra's Project</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Welcome to Divyendra's Project Section</h1>
+            <p>Choose a recommendation system below:</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>🎬 Movie Recommendation</h2>
+            <p>Enter a movie name and get personalized recommendations based on its genre, cast, and keywords.</p>
+            <a href="{{ url_for('movie_recommend') }}" class="btn">Try Now</a>
+        </div>
+
+        <div class="card">
+            <h2>📊 Custom CSV Recommendation</h2>
+            <p>Upload a CSV file, choose a column, and get recommendations based on data similarity.</p>
+            <a href="{{ url_for('custom_recommend') }}" class="btn">Upload CSV</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Divyendra's Recommendation System</p>
+    </footer>
+</body>
+</html>

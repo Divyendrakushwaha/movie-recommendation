@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Top Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .buttons button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .buttons button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .buttons button:active {
+            background-color: #003f7f;
+            transform: scale(0.98);
+        }
+        .recommendation-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .score {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .details {
+            display: none;
+            white-space: pre-wrap;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        function toggleDetails(id) {
+            var details = document.getElementById(id);
+            details.style.display = details.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Top Recommendations</h2>
+            <div class="buttons">
+                <button onclick="window.history.back()">Back</button>
+                <button onclick="window.location.href='/'">Home</button>
+            </div>
+        </div>
+        {% if not recommendations %}
+        <strong>No Recommendation Found try with different column and query!!</strong>
+        {% endif %}
+        {% for item in recommendations %}
+        <div class="recommendation-card" onclick="toggleDetails('details{{ loop.index }}')">
+            <strong>SCORE: <span class="score">{{ item['score'] }}</span></strong>
+            <div id="details{{ loop.index }}" class="details">{{ item | tojson(indent=2) }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
